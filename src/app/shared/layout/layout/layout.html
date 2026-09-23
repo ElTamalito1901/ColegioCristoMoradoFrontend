@@ -1,0 +1,18 @@
+<div class="flex min-h-screen bg-[#F4EEE6]">
+
+  <app-siderbar [items]="itemsMenu()" [rol]="usuario?.rol ?? ''" />
+
+  <div class="flex flex-col flex-1 min-w-0">
+    <app-navbar
+      [titulo]="tituloActivo()"
+      [usuarioNombre]="usuario?.nombre ?? ''"
+      [usuarioCorreo]="usuario?.usuario ?? ''"
+      [notificaciones]="notificaciones.datos().total"
+      [tabNotificaciones]="notificaciones.datos().comunicadosNoLeidos === 0 && notificaciones.datos().mensajesNoLeidos > 0 ? 'mensajes' : 'comunicados'"
+    />
+
+    <main class="flex-1 p-6 overflow-y-auto">
+      <router-outlet />
+    </main>
+  </div>
+</div>

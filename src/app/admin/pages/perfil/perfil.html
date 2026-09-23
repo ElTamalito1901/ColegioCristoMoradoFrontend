@@ -1,0 +1,319 @@
+<div class="max-w-2xl space-y-5">
+
+  <div>
+    <h2 class="font-serif font-bold text-2xl text-[#241521]">Mi perfil</h2>
+    <p class="text-[13.5px] text-[#6B5A67] mt-0.5">{{ perfil()?.puedeEditar === false ? 'Consulta tu información personal.' : 'Consulta y edita tu información personal.' }}</p>
+  </div>
+
+  <div *ngIf="error()" class="bg-[#FBE7E9] border border-[#A62639]/30 text-[#A62639] text-[13px] rounded-xl px-4 py-3">
+    {{ error() }}
+  </div>
+
+  <div *ngIf="guardadoOk()" class="bg-[#E7F3EA] border border-[#1E7A3B]/30 text-[#1E7A3B] text-[13px] rounded-xl px-4 py-3">
+    Tu perfil se actualizó correctamente.
+  </div>
+
+  <div *ngIf="cargando()" class="text-[13.5px] text-[#6B5A67]">Cargando perfil...</div>
+
+  <ng-container *ngIf="!cargando() && perfil() as p">
+    <div class="bg-white rounded-xl border border-[#E3D5C4] p-6 flex items-center gap-4">
+      <div class="w-16 h-16 rounded-full flex items-center justify-center text-white text-[20px] font-semibold shrink-0"
+           style="background:radial-gradient(circle at 35% 30%, #4A1F52, #2E1233 75%)">
+        {{ iniciales(p.nombre) }}
+      </div>
+      <div class="min-w-0">
+        <p class="font-serif font-bold text-[17px] text-[#241521] truncate">{{ p.nombre }}</p>
+        <p class="text-[13px] text-[#6B5A67]">Usuario: <strong class="text-[#241521] tracking-wide">{{ p.usuario }}</strong></p>
+        <span class="inline-block mt-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-[#EFEAF3] text-[#4A1F52]">
+          {{ etiquetaRol(p.rol) }}
+        </span>
+      </div>
+    </div>
+
+    <!-- ===================== Gmail vinculado ===================== -->
+    <div class="bg-white rounded-xl border border-[#E3D5C4] p-6 space-y-4">
+      <div class="flex items-center justify-between gap-3">
+        <h3 class="text-[12px] font-semibold text-[#4A1F52] uppercase tracking-wide flex items-center gap-2">
+          <svg viewBox="0 0 24 24" fill="none" class="w-4 h-4" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+          Correo Gmail
+        </h3>
+        @if (!gmailAbierto()) {
+          <button type="button" (click)="abrirGmail()" class="text-[12.5px] font-medium text-[#4A1F52] hover:text-[#2E1233]">
+            {{ !p.correo ? 'Vincular Gmail' : (p.correoVerificado ? 'Cambiar Gmail' : 'Verificar ahora') }}
+          </button>
+        }
+      </div>
+
+      @if (gmailOk()) {
+        <div class="bg-[#E7F3EA] border border-[#1E7A3B]/30 text-[#1E7A3B] text-[13px] rounded-lg px-3 py-2.5">¡Listo! Tu Gmail quedó verificado.</div>
+      }
+
+      @if (p.correo && p.correoVerificado) {
+        <div class="flex items-center justify-between gap-3 rounded-lg bg-[#FAF6EF] px-4 py-3">
+          <span class="text-[14px] text-[#241521] font-medium break-all">{{ p.correo }}</span>
+          <span class="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-[#E7F3EA] text-[#1E7A3B]">
+            <svg viewBox="0 0 24 24" fill="none" class="w-3.5 h-3.5" stroke="currentColor" stroke-width="2.5"><path d="m5 12 5 5L20 7"/></svg>
+            Verificado
+          </span>
+        </div>
+      } @else if (p.correo) {
+        <div class="flex items-center justify-between gap-3 rounded-lg bg-[#FDF1DC] px-4 py-3">
+          <span class="text-[14px] text-[#241521] break-all">{{ p.correo }}</span>
+          <span class="shrink-0 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-white text-[#B08900]">Sin verificar</span>
+        </div>
+      } @else {
+        <p class="text-[13px] text-[#6B5A67] rounded-lg bg-[#FDF1DC] px-4 py-3">
+          Aún no vinculas tu Gmail. Lo necesitas para <strong>cambiar</strong> o <strong>recuperar</strong> tu contraseña.
+        </p>
+      }
+
+      @if (gmailAbierto()) {
+        <div class="rounded-lg border border-[#E3D5C4] p-4 space-y-3">
+          @if (gmailPaso() === 'correo') {
+            <label class="block text-[12.5px] font-medium text-[#241521]">Tu Gmail personal</label>
+            <div class="flex flex-col sm:flex-row gap-2">
+              <input type="email" placeholder="tucorreo@gmail.com" autocomplete="email"
+                     [ngModel]="gmailInput()" (ngModelChange)="gmailInput.set($event)" (keydown.enter)="enviarCodigoGmail()"
+                     class="flex-1 px-3 py-2.5 text-[13.5px] rounded-lg border border-[#E3D5C4] bg-[#FAF6EF] focus:outline-none focus:ring-2 focus:ring-[#4A1F52]/30" />
+              <button type="button" (click)="enviarCodigoGmail()" [disabled]="gmailCargando()"
+                      class="px-4 py-2.5 rounded-lg bg-[#2E1233] hover:bg-[#4A1F52] text-white text-[13px] font-medium disabled:opacity-60">
+                {{ gmailCargando() ? 'Enviando...' : 'Enviar código' }}
+              </button>
+            </div>
+            <p class="text-[11.5px] text-[#6B5A67]">Te enviaremos un código de 6 dígitos para confirmar que el correo es tuyo.</p>
+          } @else {
+            <p class="text-[13px] text-[#241521]">Escribe el código que enviamos a <strong>{{ gmailEnmascarado() }}</strong> (vence en 10 minutos).</p>
+            @if (gmailCodigoPrueba()) {
+              <div class="rounded-lg border border-dashed border-[#B08900]/50 bg-[#FDF1DC] px-3 py-2 text-[12px] text-[#8A6A00]">
+                Modo prueba (Gmail no configurado en el servidor): el código es <strong class="tracking-[0.2em]">{{ gmailCodigoPrueba() }}</strong>
+              </div>
+            }
+            <div class="flex flex-col sm:flex-row gap-2">
+              <input type="text" inputmode="numeric" maxlength="6" placeholder="000000" autocomplete="one-time-code"
+                     [ngModel]="gmailCodigo()" (ngModelChange)="gmailCodigo.set($event)" (keydown.enter)="verificarGmail()"
+                     class="sm:w-44 px-3 py-2.5 text-center text-[18px] font-semibold tracking-[0.45em] rounded-lg border border-[#E3D5C4] bg-[#FAF6EF] focus:outline-none focus:ring-2 focus:ring-[#4A1F52]/30" />
+              <button type="button" (click)="verificarGmail()" [disabled]="gmailCargando()"
+                      class="px-4 py-2.5 rounded-lg bg-[#2E1233] hover:bg-[#4A1F52] text-white text-[13px] font-medium disabled:opacity-60">
+                {{ gmailCargando() ? 'Verificando...' : 'Verificar' }}
+              </button>
+            </div>
+            <div class="flex items-center justify-between text-[12px]">
+              <button type="button" (click)="gmailPaso.set('correo')" class="text-[#4A1F52] hover:underline">Cambiar correo</button>
+              @if (segundosReenvio() > 0) {
+                <span class="text-[#6B5A67]">Reenviar en {{ segundosReenvio() }} s</span>
+              } @else {
+                <button type="button" (click)="enviarCodigoGmail()" class="font-medium text-[#A62639] hover:underline">Reenviar código</button>
+              }
+            </div>
+          }
+          @if (gmailError()) {
+            <div class="bg-[#FBE7E9] border border-[#A62639]/30 text-[#A62639] text-[12.5px] rounded-lg px-3 py-2">{{ gmailError() }}</div>
+          }
+          <div class="flex justify-end">
+            <button type="button" (click)="cancelarGmail()" class="text-[12.5px] text-[#6B5A67] hover:text-[#241521]">Cancelar</button>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- ===================== Modo lectura: todos los datos ===================== -->
+    <ng-container *ngIf="!editando()">
+
+      <!-- Cuenta -->
+      <div class="bg-white rounded-xl border border-[#E3D5C4] p-6 space-y-4">
+        <div class="flex items-center justify-between">
+          <h3 class="text-[12px] font-semibold text-[#4A1F52] uppercase tracking-wide">Información de la cuenta</h3>
+          @if (p.puedeEditar) {
+            <button type="button" (click)="activarEdicion()"
+                    class="flex items-center gap-1.5 text-[12.5px] font-medium text-[#4A1F52] hover:text-[#2E1233]">
+              <svg viewBox="0 0 24 24" fill="none" class="w-3.5 h-3.5" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+              Editar
+            </button>
+          } @else {
+            <span class="flex items-center gap-1 text-[11.5px] text-[#6B5A67]">
+              <svg viewBox="0 0 24 24" fill="none" class="w-3.5 h-3.5" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+              Solo lectura
+            </span>
+          }
+        </div>
+        <dl class="space-y-2.5 text-[13.5px]">
+          <div class="flex justify-between gap-4"><dt class="text-[#6B5A67] shrink-0">Nombre</dt><dd class="text-[#241521] font-medium text-right">{{ p.nombre }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-[#6B5A67] shrink-0">Usuario</dt><dd class="text-[#241521] font-medium text-right tracking-wide">{{ p.usuario }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-[#6B5A67] shrink-0">Rol</dt><dd class="text-[#241521] font-medium text-right">{{ etiquetaRol(p.rol) }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-[#6B5A67] shrink-0">Gmail</dt><dd class="text-[#241521] font-medium text-right break-all">{{ p.correo ? p.correo + (p.correoVerificado ? ' ✓' : ' (sin verificar)') : 'No vinculado' }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-[#6B5A67] shrink-0">Estado</dt><dd class="text-[#241521] font-medium text-right">{{ p.estado ? 'Activo' : 'Inactivo' }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-[#6B5A67] shrink-0">Miembro desde</dt><dd class="text-[#241521] font-medium text-right">{{ fecha(p.fechaRegistro) }}</dd></div>
+        </dl>
+        @if (!p.puedeEditar) {
+          <p class="text-[12px] text-[#6B5A67] rounded-lg bg-[#FAF6EF] px-3 py-2">
+            Tus datos solo los puede modificar la administración del colegio. Si algo está mal, avísales.
+          </p>
+        }
+      </div>
+
+      <!-- Alumno -->
+      <ng-container *ngIf="p.estudiante as e">
+        <div class="bg-white rounded-xl border border-[#E3D5C4] p-6 space-y-4">
+          <h3 class="text-[12px] font-semibold text-[#4A1F52] uppercase tracking-wide">Datos personales</h3>
+          <dl class="space-y-2.5 text-[13.5px]">
+          <div class="flex justify-between gap-4"><dt class="text-[#6B5A67] shrink-0">Nombre completo</dt><dd class="text-[#241521] font-medium text-right">{{ e.nombreCompleto }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-[#6B5A67] shrink-0">Documento</dt><dd class="text-[#241521] font-medium text-right">{{ nombreDoc(e.tipoDocumento) }} {{ e.dni }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-[#6B5A67] shrink-0">Fecha de nacimiento</dt><dd class="text-[#241521] font-medium text-right">{{ fecha(e.fechaNacimiento) }}{{ edad(e.fechaNacimiento) !== null ? ' (' + edad(e.fechaNacimiento) + ' años)' : '' }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-[#6B5A67] shrink-0">Género</dt><dd class="text-[#241521] font-medium text-right">{{ e.genero || '—' }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-[#6B5A67] shrink-0">Nacionalidad</dt><dd class="text-[#241521] font-medium text-right">{{ e.nacionalidad || '—' }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-[#6B5A67] shrink-0">Dirección</dt><dd class="text-[#241521] font-medium text-right">{{ e.direccion || '—' }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-[#6B5A67] shrink-0">Teléfono</dt><dd class="text-[#241521] font-medium text-right">{{ e.telefono || '—' }}</dd></div>
+          </dl>
+        </div>
+        <div class="bg-white rounded-xl border border-[#E3D5C4] p-6 space-y-4">
+          <h3 class="text-[12px] font-semibold text-[#4A1F52] uppercase tracking-wide">Información académica</h3>
+          <dl class="space-y-2.5 text-[13.5px]">
+          <div class="flex justify-between gap-4"><dt class="text-[#6B5A67] shrink-0">Grado</dt><dd class="text-[#241521] font-medium text-right">{{ e.grado }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-[#6B5A67] shrink-0">Sección</dt><dd class="text-[#241521] font-medium text-right">{{ e.seccion }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-[#6B5A67] shrink-0">Año de ingreso</dt><dd class="text-[#241521] font-medium text-right">{{ e.anioIngreso || '—' }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-[#6B5A67] shrink-0">Estado</dt><dd class="text-[#241521] font-medium text-right">{{ e.estado }}</dd></div>
+          </dl>
+        </div>
+        <div class="bg-white rounded-xl border border-[#E3D5C4] p-6 space-y-3">
+          <h3 class="text-[12px] font-semibold text-[#4A1F52] uppercase tracking-wide">Padres / apoderados</h3>
+          @for (pa of e.padres; track pa.id) {
+            <div class="flex items-center justify-between rounded-lg border border-[#E3D5C4] px-3.5 py-2.5">
+              <div>
+                <p class="text-[13.5px] font-medium text-[#241521]">{{ pa.nombreCompleto }}</p>
+                <p class="text-[12px] text-[#6B5A67]">{{ pa.telefono }}</p>
+              </div>
+              <span class="px-2.5 py-1 rounded-full text-[11px] font-medium bg-[#EFEAF3] text-[#4A1F52]">{{ pa.parentesco }}</span>
+            </div>
+          } @empty {
+            <p class="text-[13px] text-[#6B5A67]">Aún no hay padres o apoderados registrados.</p>
+          }
+        </div>
+      </ng-container>
+
+      <!-- Docente -->
+      <ng-container *ngIf="p.docente as d">
+        <div class="bg-white rounded-xl border border-[#E3D5C4] p-6 space-y-4">
+          <h3 class="text-[12px] font-semibold text-[#4A1F52] uppercase tracking-wide">Datos personales</h3>
+          <dl class="space-y-2.5 text-[13.5px]">
+          <div class="flex justify-between gap-4"><dt class="text-[#6B5A67] shrink-0">Nombre completo</dt><dd class="text-[#241521] font-medium text-right">{{ d.nombreCompleto }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-[#6B5A67] shrink-0">Documento</dt><dd class="text-[#241521] font-medium text-right">{{ nombreDoc(d.tipoDocumento) }} {{ d.dni }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-[#6B5A67] shrink-0">Fecha de nacimiento</dt><dd class="text-[#241521] font-medium text-right">{{ fecha(d.fechaNacimiento) }}{{ edad(d.fechaNacimiento) !== null ? ' (' + edad(d.fechaNacimiento) + ' años)' : '' }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-[#6B5A67] shrink-0">Género</dt><dd class="text-[#241521] font-medium text-right">{{ d.genero || '—' }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-[#6B5A67] shrink-0">Teléfono</dt><dd class="text-[#241521] font-medium text-right">{{ d.telefono || '—' }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-[#6B5A67] shrink-0">Correo de contacto</dt><dd class="text-[#241521] font-medium text-right break-all">{{ d.correo || '—' }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-[#6B5A67] shrink-0">Dirección</dt><dd class="text-[#241521] font-medium text-right">{{ d.direccion || '—' }}</dd></div>
+          </dl>
+        </div>
+        <div class="bg-white rounded-xl border border-[#E3D5C4] p-6 space-y-4">
+          <h3 class="text-[12px] font-semibold text-[#4A1F52] uppercase tracking-wide">Información profesional</h3>
+          <dl class="space-y-2.5 text-[13.5px]">
+          <div class="flex justify-between gap-4"><dt class="text-[#6B5A67] shrink-0">Especialidad</dt><dd class="text-[#241521] font-medium text-right">{{ d.especialidad || '—' }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-[#6B5A67] shrink-0">Título profesional</dt><dd class="text-[#241521] font-medium text-right">{{ d.tituloProfesional || '—' }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-[#6B5A67] shrink-0">Fecha de ingreso</dt><dd class="text-[#241521] font-medium text-right">{{ fecha(d.fechaIngreso) }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-[#6B5A67] shrink-0">Estado</dt><dd class="text-[#241521] font-medium text-right">{{ d.estado }}</dd></div>
+          </dl>
+        </div>
+      </ng-container>
+
+      <!-- Directiva / Personal Staff -->
+      <ng-container *ngIf="p.personal as ps">
+        <div class="bg-white rounded-xl border border-[#E3D5C4] p-6 space-y-4">
+          <h3 class="text-[12px] font-semibold text-[#4A1F52] uppercase tracking-wide">Datos personales</h3>
+          <dl class="space-y-2.5 text-[13.5px]">
+          <div class="flex justify-between gap-4"><dt class="text-[#6B5A67] shrink-0">Documento</dt><dd class="text-[#241521] font-medium text-right">{{ nombreDoc(ps.tipoDocumento) }} {{ ps.numeroDocumento }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-[#6B5A67] shrink-0">Nombres</dt><dd class="text-[#241521] font-medium text-right">{{ ps.nombres }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-[#6B5A67] shrink-0">Apellidos</dt><dd class="text-[#241521] font-medium text-right">{{ ps.apellidoPaterno }} {{ ps.apellidoMaterno }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-[#6B5A67] shrink-0">Fecha de nacimiento</dt><dd class="text-[#241521] font-medium text-right">{{ fecha(ps.fechaNacimiento) }}{{ edad(ps.fechaNacimiento) !== null ? ' (' + edad(ps.fechaNacimiento) + ' años)' : '' }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-[#6B5A67] shrink-0">Correo de contacto</dt><dd class="text-[#241521] font-medium text-right break-all">{{ ps.correo || '—' }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-[#6B5A67] shrink-0">Teléfono</dt><dd class="text-[#241521] font-medium text-right">{{ ps.telefono || '—' }}</dd></div>
+          </dl>
+        </div>
+        <div class="bg-white rounded-xl border border-[#E3D5C4] p-6 space-y-4">
+          <h3 class="text-[12px] font-semibold text-[#4A1F52] uppercase tracking-wide">Cargo y permisos</h3>
+          <dl class="space-y-2.5 text-[13.5px]">
+          <div class="flex justify-between gap-4"><dt class="text-[#6B5A67] shrink-0">Cargo</dt><dd class="text-[#241521] font-medium text-right">{{ ps.cargo || '—' }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-[#6B5A67] shrink-0">Estado</dt><dd class="text-[#241521] font-medium text-right">{{ ps.estado }}</dd></div>
+          </dl>
+          <div class="flex flex-wrap gap-1.5">
+            @for (perm of permisosInfo(p.permisos); track perm) {
+              <span class="px-2.5 py-1 rounded-full text-[11.5px] bg-[#EFEAF3] text-[#4A1F52]">{{ perm }}</span>
+            } @empty {
+              <span class="text-[12.5px] text-[#6B5A67]">Aún no tienes permisos asignados.</span>
+            }
+          </div>
+          <p class="text-[11.5px] text-[#6B5A67]">Tus permisos los asigna el administrador del sistema.</p>
+        </div>
+      </ng-container>
+
+      <!-- Apoderado / padre -->
+      <ng-container *ngIf="p.padre as pf">
+        <div class="bg-white rounded-xl border border-[#E3D5C4] p-6 space-y-4">
+          <h3 class="text-[12px] font-semibold text-[#4A1F52] uppercase tracking-wide">Datos personales</h3>
+          <dl class="space-y-2.5 text-[13.5px]">
+          <div class="flex justify-between gap-4"><dt class="text-[#6B5A67] shrink-0">Nombre completo</dt><dd class="text-[#241521] font-medium text-right">{{ pf.nombreCompleto }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-[#6B5A67] shrink-0">Documento</dt><dd class="text-[#241521] font-medium text-right">{{ nombreDoc(pf.tipoDocumento) }} {{ pf.dni }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-[#6B5A67] shrink-0">Fecha de nacimiento</dt><dd class="text-[#241521] font-medium text-right">{{ fecha(pf.fechaNacimiento) }}{{ edad(pf.fechaNacimiento) !== null ? ' (' + edad(pf.fechaNacimiento) + ' años)' : '' }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-[#6B5A67] shrink-0">Teléfono</dt><dd class="text-[#241521] font-medium text-right">{{ pf.telefono }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-[#6B5A67] shrink-0">Correo de contacto</dt><dd class="text-[#241521] font-medium text-right break-all">{{ pf.correo || '—' }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-[#6B5A67] shrink-0">Dirección</dt><dd class="text-[#241521] font-medium text-right">{{ pf.direccion || '—' }}</dd></div>
+          <div class="flex justify-between gap-4"><dt class="text-[#6B5A67] shrink-0">Estado</dt><dd class="text-[#241521] font-medium text-right">{{ pf.estado }}</dd></div>
+          </dl>
+        </div>
+        <div class="bg-white rounded-xl border border-[#E3D5C4] p-6 space-y-3">
+          <h3 class="text-[12px] font-semibold text-[#4A1F52] uppercase tracking-wide">Mis hijos</h3>
+          @for (h of pf.estudiantes; track h.id) {
+            <div class="flex items-center justify-between rounded-lg border border-[#E3D5C4] px-3.5 py-2.5">
+              <div>
+                <p class="text-[13.5px] font-medium text-[#241521]">{{ h.nombreCompleto }}</p>
+                <p class="text-[12px] text-[#6B5A67]">{{ h.dni }} · {{ h.grado }} "{{ h.seccion }}"</p>
+              </div>
+              <span class="px-2.5 py-1 rounded-full text-[11px] font-medium bg-[#EFEAF3] text-[#4A1F52]">{{ h.parentesco }}</span>
+            </div>
+          } @empty {
+            <p class="text-[13px] text-[#6B5A67]">Aún no hay alumnos vinculados a tu cuenta.</p>
+          }
+        </div>
+      </ng-container>
+    </ng-container>
+
+    <!-- Modo edición -->
+    <form *ngIf="editando() && p.puedeEditar" [formGroup]="form" (ngSubmit)="guardar()" class="bg-white rounded-xl border border-[#E3D5C4] p-6 space-y-4">
+      <h3 class="text-[12px] font-semibold text-[#4A1F52] uppercase tracking-wide">Editar información</h3>
+      <div>
+        <label class="block text-[12.5px] font-medium text-[#241521] mb-1.5">Nombre completo *</label>
+        <input type="text" formControlName="nombre"
+               class="w-full px-3 py-2.5 text-[13.5px] rounded-lg border border-[#E3D5C4] bg-[#FAF6EF] focus:outline-none focus:ring-2 focus:ring-[#4A1F52]/30" />
+      </div>
+      <ng-container *ngIf="perfil()?.personal">
+        <div>
+          <label class="block text-[12.5px] font-medium text-[#241521] mb-1.5">Teléfono</label>
+          <input type="text" formControlName="telefono"
+                 class="w-full px-3 py-2.5 text-[13.5px] rounded-lg border border-[#E3D5C4] bg-[#FAF6EF] focus:outline-none focus:ring-2 focus:ring-[#4A1F52]/30" />
+        </div>
+      </ng-container>
+      <ng-container *ngIf="perfil()?.docente || perfil()?.padre">
+        <div>
+          <label class="block text-[12.5px] font-medium text-[#241521] mb-1.5">Teléfono</label>
+          <input type="text" formControlName="telefono"
+                 class="w-full px-3 py-2.5 text-[13.5px] rounded-lg border border-[#E3D5C4] bg-[#FAF6EF] focus:outline-none focus:ring-2 focus:ring-[#4A1F52]/30" />
+        </div>
+        <div>
+          <label class="block text-[12.5px] font-medium text-[#241521] mb-1.5">Dirección</label>
+          <input type="text" formControlName="direccion"
+                 class="w-full px-3 py-2.5 text-[13.5px] rounded-lg border border-[#E3D5C4] bg-[#FAF6EF] focus:outline-none focus:ring-2 focus:ring-[#4A1F52]/30" />
+        </div>
+      </ng-container>
+
+      <div class="flex gap-3 pt-2">
+        <button type="submit" [disabled]="guardando()"
+                class="flex-1 flex items-center justify-center gap-2 bg-[#2E1233] hover:bg-[#4A1F52] text-white text-[13.5px] font-medium px-4 py-2.5 rounded-lg transition-colors disabled:opacity-60">
+          {{ guardando() ? 'Guardando...' : 'Guardar cambios' }}
+        </button>
+        <button type="button" (click)="cancelarEdicion()"
+                class="px-4 py-2.5 rounded-lg border border-[#E3D5C4] text-[13.5px] font-medium text-[#241521] hover:bg-[#F0E6D8] transition-colors">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </ng-container>
+</div>

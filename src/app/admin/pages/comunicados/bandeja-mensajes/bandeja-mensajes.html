@@ -1,0 +1,242 @@
+<div class="space-y-4">
+
+  <!-- Redactar -->
+  <button type="button" (click)="abrirRedactar()"
+          class="w-full flex items-center justify-between gap-3 bg-[#FAF6EF] hover:bg-[#F0E6D8] border border-[#E3D5C4]
+                 rounded-xl px-4 py-3 text-left transition-colors">
+    <span class="flex items-center gap-3 text-[13.5px] text-[#6B5A67]">
+      <span class="w-8 h-8 rounded-full bg-[#EFEAF3] text-[#4A1F52] flex items-center justify-center">
+        <svg viewBox="0 0 24 24" fill="none" class="w-4 h-4" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+      </span>
+      Redactar un nuevo mensaje ...
+    </span>
+    <span class="flex items-center gap-1.5 text-[13px] font-medium text-[#4A1F52] bg-[#EFEAF3] px-3 py-1.5 rounded-lg">
+      <svg viewBox="0 0 24 24" fill="none" class="w-4 h-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      Crear
+    </span>
+  </button>
+
+  @if (error()) {
+    <div class="bg-[#FBE7E9] border border-[#A62639]/30 text-[#A62639] text-[13px] rounded-xl px-4 py-3">{{ error() }}</div>
+  }
+
+  <!-- Buscar -->
+  <div class="relative">
+    <svg viewBox="0 0 24 24" fill="none" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#6B5A67]" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+    <input type="text" placeholder="Buscar mensajes..." [ngModel]="busqueda()" (ngModelChange)="busqueda.set($event)"
+           class="w-full pl-9 pr-3 py-2.5 text-[13.5px] rounded-xl border border-[#E3D5C4] bg-white focus:outline-none focus:ring-2 focus:ring-[#4A1F52]/30" />
+  </div>
+
+  <!-- Año + bandejas -->
+  <div class="flex flex-wrap items-center gap-2">
+    <div class="relative">
+      <svg viewBox="0 0 24 24" fill="none" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#6B5A67] pointer-events-none" stroke="currentColor" stroke-width="1.8"><path d="M7 3v4M17 3v4M4 9h16M5 6h14a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Z"/></svg>
+      <select [ngModel]="anio()" (ngModelChange)="anio.set(+$event)"
+              class="pl-9 pr-8 py-2 text-[14px] font-medium rounded-lg border border-[#E3D5C4] bg-white focus:outline-none min-w-[140px]">
+        @for (a of anios(); track a) { <option [value]="a">{{ a }}</option> }
+      </select>
+    </div>
+    <button type="button" (click)="cambiarBandeja('recibidos')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[12.5px] font-medium transition-colors" [ngClass]="claseChip(bandeja() === 'recibidos')">
+      <svg viewBox="0 0 24 24" fill="none" class="w-3.5 h-3.5" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+      Recibidos
+      @if (noLeidos() > 0) {
+        <span class="ml-0.5 min-w-4 h-4 px-1 rounded-full bg-[#A62639] text-white text-[10px] flex items-center justify-center">{{ noLeidos() }}</span>
+      }
+    </button>
+    <button type="button" (click)="cambiarBandeja('enviados')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[12.5px] font-medium transition-colors" [ngClass]="claseChip(bandeja() === 'enviados')">
+      <svg viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5"><path d="M3 11 21 3l-8 18-2-8-8-2Z"/></svg>
+      Enviados
+    </button>
+  </div>
+
+  <!-- Lista -->
+  @if (cargando()) {
+    <p class="text-center text-[13px] text-[#6B5A67] py-10">Cargando mensajes...</p>
+  } @else if (filtrados().length === 0) {
+    <div class="flex flex-col items-center justify-center text-center py-14">
+      <div class="w-24 h-24 rounded-full bg-[#EFEAF3] flex items-center justify-center mb-4">
+        <svg viewBox="0 0 24 24" fill="none" class="w-12 h-12" stroke="#4A1F52" stroke-width="1.5"><path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-5 4V6a1 1 0 0 1 1-1Z"/></svg>
+      </div>
+      <p class="font-serif font-bold text-[16px] text-[#241521]">{{ bandeja() === 'recibidos' ? 'No tienes mensajes' : 'Aún no enviaste mensajes' }}</p>
+      <p class="text-[13px] text-[#6B5A67]">Usa <strong>Crear</strong> para escribir a tus compañeros, docentes o a la administración.</p>
+    </div>
+  } @else {
+    <div class="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
+      @for (m of filtrados(); track m.id) {
+        <article (click)="abrirDetalle(m)"
+                 class="cursor-pointer rounded-2xl border p-4 sm:p-5 shadow-sm hover:shadow-md transition-all"
+                 [ngClass]="m.bandeja === 'RECIBIDO' && !m.leido ? 'bg-white border-[#4A1F52]/30' : 'bg-[#F5F1EC] border-[#E3D5C4]'">
+          <div class="flex items-start gap-4">
+            <div class="relative w-12 h-12 rounded-full shrink-0 flex items-center justify-center text-white text-[15px] font-semibold"
+                 style="background:radial-gradient(circle at 35% 30%, #6B3474, #2E1233 75%)">
+              {{ iniciales(m.bandeja === 'RECIBIDO' ? m.remitente.nombre : m.destinatarios[0]?.nombre) }}
+              @if (m.bandeja === 'RECIBIDO' && !m.leido) {
+                <span class="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-[#A62639] border-2 border-white"></span>
+              }
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-start justify-between gap-3">
+                <p class="text-[17px] text-[#241521] truncate" [ngClass]="m.bandeja === 'RECIBIDO' && !m.leido ? 'font-semibold' : 'font-medium'">{{ nombreTarjeta(m) }}</p>
+                <span class="text-[12px] text-[#241521] shrink-0 mt-1">{{ haceCuanto(m.fechaEnvio) }}</span>
+              </div>
+              @if (m.bandeja === 'RECIBIDO') {
+                <p class="text-[11.5px] text-[#6B5A67] -mt-0.5">{{ m.remitente.rol }}</p>
+              }
+              <p class="text-[14.5px] text-[#241521] font-medium truncate mt-0.5">{{ m.asunto }}</p>
+              <p class="text-[13.5px] text-[#241521]/85 truncate">{{ textoPlano(m.contenido) }}</p>
+
+              <div class="flex items-center justify-end gap-3 mt-2">
+                @if (m.bandeja === 'ENVIADO') {
+                  <span class="mr-auto text-[11.5px] text-[#6B5A67]">✓ Visto por {{ vistos(m) }} de {{ m.destinatarios.length }}</span>
+                }
+                @if (m.bandeja === 'RECIBIDO' && m.remitente.usuarioId) {
+                  <button type="button" (click)="responder(m, $event)" class="text-[14px] text-[#4A1F52] hover:underline">Responder</button>
+                }
+                <button type="button" title="Eliminar" (click)="eliminar(m, $event)" class="text-[#4A1F52] hover:text-[#A62639]">
+                  <svg viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-3 6h12l-1 12H7L6 9Z"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </article>
+      }
+    </div>
+  }
+</div>
+
+<!-- ===================== Detalle ===================== -->
+@if (detalle(); as m) {
+  <div class="fixed inset-0 z-50 flex justify-end">
+    <div class="absolute inset-0 bg-[#241521]/40" (click)="cerrarDetalle()"></div>
+    <div class="relative w-full max-w-xl bg-white h-full shadow-2xl overflow-y-auto flex flex-col">
+      <div class="flex items-start gap-4 px-7 pt-7 pb-4 border-b border-[#F0E6D8]">
+        <div class="w-12 h-12 rounded-full shrink-0 flex items-center justify-center text-white text-[15px] font-semibold"
+             style="background:radial-gradient(circle at 35% 30%, #6B3474, #2E1233 75%)">
+          {{ iniciales(m.remitente.nombre) }}
+        </div>
+        <div class="min-w-0 flex-1">
+          <h3 class="font-serif font-bold text-[20px] text-[#241521] leading-tight">{{ m.asunto }}</h3>
+          <p class="text-[13px] text-[#241521] mt-1">De: <strong class="font-medium">{{ m.remitente.nombre }}</strong>
+            @if (m.remitente.rol) { <span class="text-[#6B5A67]">({{ m.remitente.rol }})</span> }</p>
+          <p class="text-[12.5px] text-[#6B5A67] mt-0.5">Para: {{ listaDestinatarios(m) }}</p>
+          <p class="text-[12px] text-[#6B5A67] mt-0.5">{{ fechaLarga(m.fechaEnvio) }}</p>
+        </div>
+        <button type="button" (click)="cerrarDetalle()" class="text-[#6B5A67] hover:text-[#241521]" title="Cerrar">
+          <svg viewBox="0 0 24 24" fill="none" class="w-5 h-5" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="px-7 py-6 flex-1">
+        <div class="contenido-rico text-[14.5px] leading-relaxed text-[#241521]" [innerHTML]="m.contenido"></div>
+      </div>
+      <div class="px-7 py-4 border-t border-[#F0E6D8] flex justify-end gap-2">
+        <button type="button" (click)="eliminar(m)" class="px-4 py-2 rounded-lg border border-[#A62639]/30 text-[13.5px] font-medium text-[#A62639] hover:bg-[#FBE7E9]">Eliminar</button>
+        @if (m.bandeja === 'RECIBIDO' && m.remitente.usuarioId) {
+          <button type="button" (click)="responder(m)" class="px-4 py-2 rounded-lg bg-[#2E1233] hover:bg-[#4A1F52] text-white text-[13.5px] font-medium">Responder</button>
+        }
+        <button type="button" (click)="cerrarDetalle()" class="px-4 py-2 rounded-lg border border-[#E3D5C4] text-[13.5px] font-medium text-[#241521] hover:bg-[#F0E6D8]">Cerrar</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ===================== Redactar ===================== -->
+@if (modalAbierto()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-[#241521]/40" (click)="cerrarModal()"></div>
+    <div class="relative w-full max-w-xl max-h-[92vh] overflow-y-auto bg-white rounded-xl shadow-2xl">
+      <div class="flex items-center justify-between px-5 py-3.5 border-b border-[#E3D5C4]">
+        <h3 class="font-serif font-bold text-[20px] text-[#241521]">{{ respuestaAId ? 'Responder Mensaje' : 'Crear Nuevo Mensaje' }}</h3>
+        <button type="button" (click)="cerrarModal()" class="text-[#6B5A67] hover:text-[#241521]">
+          <svg viewBox="0 0 24 24" fill="none" class="w-5 h-5" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="px-5 py-4 space-y-4">
+        <!-- Para -->
+        <div class="relative">
+          <div class="flex items-start gap-2">
+            <span class="text-[16px] text-[#241521] pt-2.5">Para:</span>
+            <div class="flex-1 relative">
+              <span class="absolute -top-2 left-2.5 px-1 bg-white text-[10.5px] text-[#6B5A67]">Escribe un miembro o grupo</span>
+              <div class="flex flex-wrap items-center gap-1.5 min-h-[44px] px-2 py-1.5 rounded-lg border-2 border-[#2E1233]/70 focus-within:border-[#4A1F52]"
+                   (click)="inputPara.focus()">
+                @for (p of para(); track p.usuarioId) {
+                  <span class="flex items-center gap-1 pl-2.5 pr-1 py-1 rounded-full bg-[#EFEAF3] text-[12.5px] text-[#4A1F52]">
+                    {{ p.nombre }}
+                    <button type="button" (click)="$event.stopPropagation(); quitar(p.usuarioId)" class="w-4 h-4 rounded-full hover:bg-[#4A1F52]/15 flex items-center justify-center" title="Quitar">
+                      <svg viewBox="0 0 24 24" fill="none" class="w-3 h-3" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                    </button>
+                  </span>
+                }
+                <input #inputPara type="text" class="flex-1 min-w-[120px] py-1 text-[14px] outline-none bg-transparent"
+                       [ngModel]="textoPara()" (ngModelChange)="textoPara.set($event); sugerenciasAbiertas.set(true)"
+                       (focus)="sugerenciasAbiertas.set(true)" (keydown)="teclaPara($event)" autocomplete="off" />
+              </div>
+
+              @if (sugerenciasAbiertas()) {
+                <div class="absolute z-10 left-0 right-0 mt-1 max-h-72 overflow-y-auto bg-white border border-[#E3D5C4] rounded-lg shadow-xl">
+                  @if (!contactos()) {
+                    <p class="px-4 py-3 text-[13px] text-[#6B5A67]">Cargando contactos...</p>
+                  } @else {
+                    @for (g of sugerencias().grupos; track g.clave) {
+                      <button type="button" (click)="agregarGrupo(g)"
+                              class="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-[#FAF6EF] border-b border-[#F0E6D8]">
+                        <span class="w-9 h-9 rounded-full bg-[#EFEAF3] text-[#4A1F52] flex items-center justify-center shrink-0">
+                          <svg viewBox="0 0 24 24" fill="none" class="w-5 h-5" stroke="currentColor" stroke-width="1.8"><path d="M8.5 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM17 12a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM2.5 19.5c.5-3 2.8-5 6-5s5.5 2 6 5M15.3 14.6c2.4.2 4.2 1.9 4.7 4.4"/></svg>
+                        </span>
+                        <span class="flex-1 min-w-0">
+                          <span class="block text-[14.5px] font-medium text-[#241521] truncate">{{ g.nombre }}</span>
+                          <span class="block text-[11.5px] text-[#6B5A67]">Grupo · {{ g.descripcion }}</span>
+                        </span>
+                      </button>
+                    }
+                    @for (c of sugerencias().personas; track c.usuarioId) {
+                      <button type="button" (click)="agregarPersona(c)"
+                              class="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-[#FAF6EF]">
+                        <span class="w-9 h-9 rounded-full bg-[#6B5A67]/80 text-white text-[12px] font-semibold flex items-center justify-center shrink-0">{{ iniciales(c.nombre) }}</span>
+                        <span class="flex-1 min-w-0">
+                          <span class="block text-[15px] text-[#241521] truncate">{{ c.nombre }}</span>
+                          @if (c.detalle) { <span class="block text-[11.5px] text-[#6B5A67]">{{ c.detalle }}</span> }
+                        </span>
+                        <span class="px-2 py-0.5 rounded-full text-[11px] font-medium shrink-0" [ngClass]="claseRol(c.rol)">{{ c.rol }}</span>
+                      </button>
+                    }
+                    @if (!sugerencias().grupos.length && !sugerencias().personas.length) {
+                      <p class="px-4 py-3 text-[13px] text-[#6B5A67]">No hay contactos que coincidan.</p>
+                    }
+                  }
+                  <div class="sticky bottom-0 bg-white border-t border-[#F0E6D8] px-3 py-1.5 flex justify-end">
+                    <button type="button" (click)="sugerenciasAbiertas.set(false)" class="text-[12.5px] font-medium text-[#4A1F52] hover:underline">Cerrar lista</button>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+
+        <input type="text" [(ngModel)]="asunto" placeholder="Asunto" maxlength="200" (focus)="sugerenciasAbiertas.set(false)"
+               class="w-full px-3 py-2.5 text-[14px] rounded-lg border border-[#E3D5C4] focus:outline-none focus:ring-2 focus:ring-[#4A1F52]/30" />
+
+        <div (focusin)="sugerenciasAbiertas.set(false)">
+          <label class="block text-[18px] text-[#241521] mb-1">Mensaje</label>
+          <app-editor-texto [contenido]="contenido" (contenidoChange)="contenido = $event" placeholder="Escribe tu mensaje..." [alto]="180" />
+        </div>
+
+        @if (errorModal()) {
+          <div class="bg-[#FBE7E9] border border-[#A62639]/30 text-[#A62639] text-[12.5px] rounded-lg px-3 py-2.5">{{ errorModal() }}</div>
+        }
+      </div>
+
+      <div class="flex justify-end gap-2 px-5 py-4 border-t border-[#E3D5C4]">
+        <button type="button" (click)="enviar()" [disabled]="enviando()"
+                class="px-5 py-2.5 rounded-lg bg-[#6B2C63] hover:bg-[#4A1F52] text-white text-[15px] font-medium disabled:opacity-60 transition-colors">
+          {{ enviando() ? 'Enviando...' : 'Enviar' }}
+        </button>
+        <button type="button" (click)="cerrarModal()"
+                class="px-5 py-2.5 rounded-lg border border-[#4A1F52]/40 text-[15px] font-medium text-[#4A1F52] hover:bg-[#EFEAF3]">
+          Cancelar
+        </button>
+      </div>
+    </div>
+  </div>
+}
